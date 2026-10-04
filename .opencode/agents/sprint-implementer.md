@@ -1,7 +1,7 @@
 ---
 description: Único agente autorizado a editar código. Implementa um incremento por ciclo. Não pode alterar guardrails agentic.
 mode: subagent
-model: opencode-go/kimi-k2.7-code
+model: openai/gpt-6-astra
 steps: 40
 temperature: 0.2
 permission:
@@ -15,6 +15,9 @@ permission:
     "tests/**": allow
     "package.json": allow
     "package-lock.json": allow
+    ".github/workflows/ci.yml": allow
+    ".github/workflows/codeql.yml": allow
+    ".nvmrc": allow
   bash:
     "*": deny
     "git status": allow
@@ -100,7 +103,8 @@ Quando solicitado pelo Orchestrator para corrigir formatação:
 ## Restrições
 
 - Não alterar guardrails agentic (`AGENTS.md`, `opencode.json`, `.opencode/**`)
-- Não alterar `.github/**`, `.env`, `.env.*` nem qualquer arquivo de segredo
+- Não alterar `.github/**`, exceto paths individuais explicitamente autorizados por decisão humana registrada no `loop-state.md` e simultaneamente permitidos por `permission.edit`; a exceção nunca autoriza `.github/**` por wildcard
+- Nunca alterar `.env`, `.env.*` nem qualquer arquivo de segredo
 - Não fazer commit, push, merge ou operações Git remotas
 - Não obter, fabricar ou expor credenciais, chaves ou tokens
 - Não contornar CAPTCHA, MFA, rate limits ou Terms of Service

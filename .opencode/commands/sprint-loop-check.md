@@ -16,11 +16,13 @@ Toda comunicação de autoria do orquestrador dirigida ao usuário e visível du
 
 Não traduza nomes de agentes, nomes de ferramentas, comandos, caminhos ou tokens de protocolo.
 
-## Verificação de identidade
+## Contexto de execução
 
-O contexto de agente ativo fornecido pelo frontmatter `agent: sprint-orchestrator` é a única evidência de identidade permitida. Nunca leia `AGENTS.md`, `loop-state.md`, especificações da Sprint, arquivos do repositório, arquivos de configuração ou informações do ambiente para confirmar a identidade.
+O frontmatter deste comando determina `agent: sprint-orchestrator`. A seleção e ativação desse agente são responsabilidades do runtime do OpenCode e não devem ser revalidadas pelo modelo por introspecção.
 
-Se o agente ativo do sistema não for claramente `sprint-orchestrator`, retorne somente `INVALID_ORCHESTRATOR_CONTEXT`, sem usar ferramentas, e pare.
+Não leia `AGENTS.md`, `loop-state.md`, especificações da Sprint, arquivos do repositório, arquivos de configuração ou informações do ambiente para tentar confirmar identidade.
+
+Valide exclusivamente o comportamento de roteamento descrito abaixo. Qualquer violação das delegações, agentes, ordem, tokens ou limite de ferramentas deve resultar em `INVALID_AGENT_ROUTING`.
 
 ## Limite de ferramentas
 
