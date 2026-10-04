@@ -1,6 +1,7 @@
 ---
 description: Analisa arquitetura, dependências e critérios de aceitação. Somente leitura. Produz plano verificável.
 mode: subagent
+model: openai/gpt-5.6-terra
 steps: 20
 temperature: 0.1
 permission:

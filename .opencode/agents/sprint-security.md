@@ -1,7 +1,7 @@
 ---
 description: Analisa secrets, path traversal, injection, redaction, serialização, dependências e exposição de dados. Classifica findings.
 mode: subagent
-model: opencode-go/deepseek-v4-pro
+model: openai/gpt-5.6-terra
 steps: 25
 temperature: 0.1
 permission:

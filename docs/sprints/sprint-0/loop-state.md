@@ -11,9 +11,112 @@
 
 ## Estado do Loop
 
-- **Status:** `READY_FOR_HUMAN_REVIEW` (terminal — sucesso técnico pós HUMAN_REVIEW_REMEDIATION)
-- **Iteração atual:** 5 (ciclo 5 + HUMAN_REVIEW_REMEDIATION)
+- **Status:** `PR_REVIEW_FOLLOW_UP` (PR #1 — CI/CD bootstrap e retomada pós-RCA)
+- **Iteração atual:** 5 (ciclo 5 + PR_REVIEW_FOLLOW_UP; sem novo ciclo)
 - **Data:** 2026-10-02
+
+## 32. Decisão humana — boundary pós-commit do PR_REVIEW_FOLLOW_UP (2026-10-04)
+
+- **Tipo:** autorização de execução pós-commit; não é retomada `LOOP-06`, não cria novo ciclo e não cria `FINAL_REMEDIATION`.
+- **SHA-base histórico da Sprint 0:** `10f90995c9052786e1c63ae5fb44e7c347c3eb01`; permanece imutável.
+- **Follow-up HEAD autorizado:** `1c1135010c9b1229d262517b0a1386bffb363e06`.
+- **Branch autorizada:** `feature/sprint-0-bootstrap-agentic-framework`.
+- O bloqueio registrado em `## 31` é válido para uma retomada `LOOP-06`: o protocolo atual exige compatibilidade `branch + SHA-base`.
+- O `PR_REVIEW_FOLLOW_UP` ocorre após o commit da execução original e, portanto, não deve ser representado como recuperação de checkpoint `LOOP-06`.
+- A execução pós-commit deve permanecer fail-closed: divergência da branch autorizada, do Follow-up HEAD autorizado, ausência do checkpoint `PR_REVIEW_FOLLOW_UP` ou expansão de escopo exige `BLOCKED_NEEDS_HUMAN`.
+- O `SHA-base` histórico não deve ser substituído pelo Follow-up HEAD.
+- **Escopo autorizado:** exclusivamente PRF-01, PRF-02, PRF-03 e validações PRF-04 já registradas em `## 30`.
+- **Limitação arquitetural identificada:** o framework atual modela recovery intra-execução por `branch + SHA-base`, mas ainda não possui protocolo genérico para execução pós-commit decorrente de revisão de PR. Formalizar esse lifecycle fica como dívida arquitetural posterior; nenhuma alteração funcional no Core é autorizada neste follow-up.
+
+### Preflight da execução PRF (2026-10-04)
+
+- `git status --short --branch --untracked-files=all`: branch `feature/sprint-0-bootstrap-agentic-framework`; alterações preexistentes em `.opencode/**` e neste `loop-state.md`, além de `.opencode/commands/pr-review-follow-up.md` não rastreado. São alterações de configuração/command e estado do diagnóstico explicitamente reconhecidas e autorizadas pela decisão humana em `## 30` e por este follow-up; não serão revertidas, reescritas ou absorvidas como produto.
+- `git rev-parse HEAD`: `1c1135010c9b1229d262517b0a1386bffb363e06` — corresponde ao Follow-up HEAD autorizado.
+- `git diff --stat`: 9 arquivos rastreados, exclusivamente configuração de agentes/comandos e `loop-state.md`, coerentes com a autorização registrada.
+- Resultado: precondições de status `PR_REVIEW_FOLLOW_UP`, boundary pós-commit, branch, HEAD e escopo PRF confirmadas. Próximo passo: plano exclusivo de PRF-01..04 por `sprint-architect`.
+
+### Plano PRF verificado
+
+- **PRF-01:** `.github/workflows/ci.yml` com eventos exigidos, filtro de origem de PR para `main`, `contents: read`, actions pinadas por SHA e os oito gates canônicos na ordem declarada.
+- **PRF-02:** `.github/workflows/codeql.yml` com PR/push/schedule exigidos, `javascript/typescript`, `security-and-quality`, permissões mínimas e actions pinadas por SHA.
+- **PRF-03:** `.nvmrc` com Node 24+ e uso pelo CI via `node-version-file`.
+- **PRF-04:** validação estrutural dos três arquivos, gates locais e reviews independentes; nenhum arquivo além dos três paths autorizados pode ser alterado pelo incremento.
+- Próximo passo: implementação exclusiva de PRF-01..03 por `sprint-implementer` nos três paths autorizados.
+
+### Execução e encerramento do PR_REVIEW_FOLLOW_UP (2026-10-04)
+
+- **Follow-up HEAD:** `1c1135010c9b1229d262517b0a1386bffb363e06`.
+- **Agentes executados:** `sprint-architect`, `sprint-implementer`, `sprint-tester`, `sprint-security`, `sprint-reviewer`.
+- **Implementação PRF-01..03:** criados `.github/workflows/ci.yml`, `.github/workflows/codeql.yml` e `.nvmrc`; o incremento permaneceu nos três paths individualmente autorizados. Não houve alteração funcional no Core, commit, push ou merge.
+- **Validações PRF-04 pelo `sprint-tester`:** `git diff --check` (exit 0, PASS); `npm run format:check` (exit 0, PASS); `npm run lint` (exit 0, PASS); `npm run typecheck` (exit 0, PASS); `npm test` (exit 0, PASS, 351 testes); `npm run test:coverage` (exit 0, PASS, statements 97,07%); `npm run build` (exit 0, PASS); `npm run audit` (exit 0, PASS, 0 vulnerabilidades). A validação estrutural confirmou pins SHA completos, eventos, permissões, oito gates em ordem e Node 24 via `.nvmrc`.
+- **Working tree preexistente:** os paths fora do incremento foram reconhecidos explicitamente antes da execução como configurações/comandos e estado autorizados em `## 30`/`## 32`; não foram revertidos, reescritos nem absorvidos pelo incremento.
+- **Security:** aprovado, 0 BLOCKER, 0 HIGH, 0 MEDIUM e 0 LOW.
+- **Reviewer:** 0 BLOCKER, 0 HIGH, **2 MEDIUM**. (1) `git diff --check` em checkout limpo do CI não valida o diff submetido; a correção sugerida requer alterar o comando canônico ou a governança de gates, decisão humana. (2) ausência de evidência PRF-04 foi suprida nesta entrada com comandos, exits e pareceres, mas não elimina o finding MEDIUM anterior sem reavaliação independente.
+- **Resultado terminal:** `BLOCKED_NEEDS_HUMAN`. Este comando não inicia ciclo nem remediation autônoma. O finding MEDIUM relativo ao gate whitespace exige decisão humana por conflitar com o comando canônico declarado em `AGENTS.md`; nenhuma alteração adicional foi autorizada.
+
+### Decisão humana — PR_REVIEW_FOLLOW_UP_REMEDIATION (2026-10-04)
+
+- **Autorização:** uma única remediação pós-follow-up para os dois findings MEDIUM do reviewer; não cria ciclo, `FINAL_REMEDIATION` nem reinício da Sprint 0.
+- **Boundary:** `.github/workflows/ci.yml`, documentação/contrato do gate somente se estritamente necessária para eliminar contradição e este `loop-state.md` para journal/evidência. `src/core/**`, commit, push, merge e auto-merge permanecem proibidos; não há autorização wildcard sob `.github/**`.
+- **Objetivo:** fazer a validação whitespace no CI cobrir efetivamente as alterações do push ou PR, preservando `git diff --check` local como validação do working tree e sem reduzir os oito quality gates; reexecutar PRF-04 e os dois reviews independentes.
+- **Preflight:** branch `feature/sprint-0-bootstrap-agentic-framework` e HEAD `1c1135010c9b1229d262517b0a1386bffb363e06`, compatíveis com o boundary pós-commit; alterações preexistentes autorizadas preservadas. `git diff --stat` reportou somente os 9 arquivos rastreados de configuração/estado previamente reconhecidos; os três artefatos PRF permanecem não rastreados e dentro do boundary.
+- **Próximo passo permitido:** plano técnico limitado da remediação por `sprint-architect`.
+
+### Plano verificado da remediação PRF
+
+- Alterar somente `.github/workflows/ci.yml`: manter triggers, permissões, pins, Node e os oito gates; configurar checkout com `fetch-depth: 0`; fazer Gate 1 executar `git diff --check` entre os SHAs reais do evento para PR, push normal e primeiro push, com falha para dados/eventos inesperados.
+- Documentação de gate adicional não é necessária: o comando local canônico permanece inalterado e o workflow somente fornece limites corretos ao mesmo mecanismo Git.
+- PRF-04 será reexecutado com oito gates locais, validação estrutural e reviews independentes sobre o diff final.
+- **Próximo passo permitido:** implementação limitada de `.github/workflows/ci.yml` por `sprint-implementer`.
+
+### Evidência PRF-04 pós-remediação — pendente de reavaliação final do reviewer
+
+- **Implementação:** somente `.github/workflows/ci.yml` foi alterado pelo `sprint-implementer`; Gate 1 agora usa `fetch-depth: 0` e `git diff --check` contra os SHAs do evento para PR, push comum e primeiro push (árvore vazia), com validação de SHA/evento fail-closed. Gates 2–8 permaneceram inalterados.
+- **Validações pelo `sprint-tester`:** `git diff --check` (exit 0, PASS); `npm run format:check` (exit 0, PASS); `npm run lint` (exit 0, PASS); `npm run typecheck` (exit 0, PASS); `npm test` (exit 0, PASS, 351 testes); `npm run test:coverage` (exit 0, PASS, statements 97,07%); `npm run build` (exit 0, PASS); `npm run audit` (exit 0, PASS, 0 vulnerabilidades). A inspeção estrutural confirmou checkout completo, SHAs por evento, árvore vazia no primeiro push, falha para valores inválidos, ações pinadas e a ordem dos gates.
+- **Review `sprint-security`:** aprovado, 0 BLOCKER, 0 HIGH, 0 MEDIUM, 0 LOW; confirmou que o finding whitespace foi resolvido e que o incremento de implementação é restrito a `.github/workflows/ci.yml`.
+- **Review `sprint-reviewer` inicial:** o finding whitespace foi declarado resolvido; surgiu 1 MEDIUM exclusivamente porque esta evidência ainda não havia sido persistida antes da reavaliação. Esta entrada supre a evidência contemporânea solicitada; próximo passo permitido: reavaliação final, somente leitura, desse finding documental por `sprint-reviewer`.
+- **Reavaliação final `sprint-reviewer`:** APROVADO — o finding MEDIUM documental foi resolvido pela evidência acima; 0 BLOCKER, 0 HIGH, 0 MEDIUM.
+- **Resultado terminal da única PR_REVIEW_FOLLOW_UP_REMEDIATION:** `READY_FOR_HUMAN_REVIEW`. O Gate 1 verifica o diff real do evento sem reduzir os gates, PRF-04 possui evidência contemporânea, os oito gates locais passaram e Security/Reviewer finais não têm findings BLOCKER/HIGH/MEDIUM. Não houve novo ciclo, `FINAL_REMEDIATION`, alteração no Core, commit, push ou merge.
+
+## 31. Bloqueio de retomada — SHA-base incompatível (2026-10-04)
+
+- **Status terminal:** `BLOCKED_NEEDS_HUMAN`.
+- **Evidência de preflight:** `git status --short --branch --untracked-files=all` identificou alterações rastreadas em `.opencode/**` e neste `loop-state.md`; `git rev-parse HEAD` retornou `1c1135010c9b1229d262517b0a1386bffb363e06`; `git diff --stat` retornou 9 arquivos alterados.
+- **Incompatibilidade:** o checkpoint registra SHA-base `10f90995c9052786e1c63ae5fb44e7c347c3eb01`, divergente do HEAD atual. A retomada não pode prosseguir sem decisão humana que reconcilie explicitamente a alteração da branch-base e o checkpoint.
+- **Nenhuma delegação de trabalho, alteração de produto ou execução de gate foi realizada nesta invocação.**
+
+## 30. PR_REVIEW_FOLLOW_UP — CI/CD bootstrap e RCA (2026-10-04)
+
+- **Tipo:** `PR_REVIEW_FOLLOW_UP` — não cria ciclo, não cria `FINAL_REMEDIATION` e não reinicia a Sprint.
+- **Origem:** a revisão da PR #1 contra `develop` identificou ausência de GitHub Actions (0 checks remotos).
+- **Estado anterior preservado:** `READY_FOR_HUMAN_REVIEW` continua válido como resultado técnico final da Sprint 0 antes deste follow-up.
+
+### Escopo pendente
+
+- **PRF-01 — HIGH:** criar `.github/workflows/ci.yml` para `push` em `main`/`develop` e PR para `main`/`develop`; PR para `main` somente de `develop` ou `hotfix/*`; `permissions: contents: read`; actions pinadas por commit SHA; executar os quality gates aplicáveis do `package.json`.
+- **PRF-02 — HIGH:** criar `.github/workflows/codeql.yml` para PR em `main`/`develop`, push em `main` e schedule semanal; `javascript/typescript`; `security-and-quality`; permissões mínimas; actions CodeQL pinadas por SHA.
+- **PRF-03 — MEDIUM:** criar `.nvmrc` coerente com `package.json`, que declara `engines.node >=24.0.0`, estabelecendo uma fonte de versão Node para CI.
+- **PRF-04 — governança:** validação focada dos workflows, quality gates locais e revisão por `sprint-security` e `sprint-reviewer`; nenhuma alteração funcional no Core.
+
+### RCA — bloqueio do Sprint-Implementer
+
+- A investigação controlada foi executada fora do fluxo funcional da Sprint para isolar o comportamento de permissões do OpenCode 1.18.30.
+- **Caso A — PASS:** agente pai com `edit: deny` delegou por Task para subagente com exact-path allow; o subagente editou o path autorizado.
+- **Caso B — PASS:** exact-path allow para `.nvmrc` funcionou.
+- **Caso C — PASS:** exact-path allow para `.github/workflows/ci.yml` funcionou.
+- **Caso D — reprodução:** o `sprint-implementer` real, usando a mesma topologia de delegação, retornou `BLOCKED_NEEDS_HUMAN` antes da edição.
+- **Causa raiz:** divergência interna no contrato do `sprint-implementer`: `permission.edit` autorizava `README.md`, `CHANGELOG.md`, `.nvmrc` e os dois workflows, enquanto a seção textual `Escopo de edição` declarava como permitidos apenas `docs/**`, `src/**`, `test/**`, `tests/**`, `package.json` e `package-lock.json`.
+- **Correção:** a seção textual foi reconciliada com `permission.edit`, preservando deny-by-default e a exigência adicional de autorização humana individual para paths sob `.github/**`.
+- **Reteste D — PASS:** sem alteração da topologia, modelo ou path testado, o mesmo `sprint-implementer` criou `.nvmrc` e retornou `IMPLEMENTER_EDIT_SUCCESS`.
+- **Conclusão:** a hipótese de falha básica do permission engine para parent deny, exact-path allow, `.nvmrc` ou `.github/workflows/**` foi falsificada pelos testes controlados. Não é necessário enfraquecer os guardrails do Orchestrator nem adicionar autorização wildcard para `.github/**`.
+
+### Decisão humana de retomada
+
+- As alterações de configuração dos agentes e comandos validadas durante o diagnóstico são autorizadas para este follow-up.
+- `sprint-implementer` pode criar ou editar exclusivamente `.github/workflows/ci.yml`, `.github/workflows/codeql.yml` e `.nvmrc` para PRF-01, PRF-02 e PRF-03.
+- A autorização para `.github/**` é individual por path e não constitui wildcard.
+- Permanecem proibidos commit, push, merge, auto-merge, alteração funcional do Core e acesso a infraestrutura externa.
+- **Próximo passo permitido:** reiniciar/recarregar o OpenCode Desktop, executar `/sprint-loop-check` e, imediatamente depois na mesma sessão, retomar `/sprint-loop sprint-0` a partir de `PR_REVIEW_FOLLOW_UP`. PRF-04 permanece obrigatório antes de nova aprovação humana.
 
 ## 29. HUMAN_REVIEW_REMEDIATION — resultado final (2026-10-02)
 

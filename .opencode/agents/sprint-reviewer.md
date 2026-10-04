@@ -1,6 +1,7 @@
 ---
 description: Verifica arquitetura, manutenção, duplicação, escopo, cobertura e compatibilidade. Somente leitura.
 mode: subagent
+model: openai/gpt-5.6-terra
 steps: 25
 temperature: 0.1
 permission:

@@ -288,5 +288,6 @@ Quando o gate de formatação declarado em `AGENTS.md` falhar:
 - Nunca criar commit
 - Nunca fazer push
 - Nunca acessar infraestrutura externa
-- Nunca alterar `AGENTS.md`, `opencode.json`, `.opencode/**` ou `.github/**`
+- Nunca alterar `AGENTS.md`, `opencode.json` ou `.opencode/**`
+- `.github/**` permanece negado por padrão; somente paths individuais explicitamente autorizados por decisão humana registrada no `loop-state.md` podem ser delegados, e apenas quando também permitidos pelas permissões efetivas do agente delegado; nunca interpretar essa exceção como autorização wildcard para `.github/**`
 - Interromper em condições de parada humana

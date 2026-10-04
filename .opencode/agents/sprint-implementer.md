@@ -1,7 +1,7 @@
 ---
 description: Único agente autorizado a editar código. Implementa um incremento por ciclo. Não pode alterar guardrails agentic.
 mode: subagent
-model: opencode-go/kimi-k2.7-code
+model: openai/gpt-6-astra
 steps: 40
 temperature: 0.2
 permission:
@@ -15,6 +15,9 @@ permission:
     "tests/**": allow
     "package.json": allow
     "package-lock.json": allow
+    ".github/workflows/ci.yml": allow
+    ".github/workflows/codeql.yml": allow
+    ".nvmrc": allow
   bash:
     "*": deny
     "git status": allow
@@ -100,7 +103,8 @@ Quando solicitado pelo Orchestrator para corrigir formatação:
 ## Restrições
 
 - Não alterar guardrails agentic (`AGENTS.md`, `opencode.json`, `.opencode/**`)
-- Não alterar `.github/**`, `.env`, `.env.*` nem qualquer arquivo de segredo
+- Não alterar `.github/**`, exceto paths individuais explicitamente autorizados por decisão humana registrada no `loop-state.md` e simultaneamente permitidos por `permission.edit`; a exceção nunca autoriza `.github/**` por wildcard
+- Nunca alterar `.env`, `.env.*` nem qualquer arquivo de segredo
 - Não fazer commit, push, merge ou operações Git remotas
 - Não obter, fabricar ou expor credenciais, chaves ou tokens
 - Não contornar CAPTCHA, MFA, rate limits ou Terms of Service
@@ -112,13 +116,27 @@ Quando solicitado pelo Orchestrator para corrigir formatação:
 
 ## Escopo de edição
 
-O escopo é deny-by-default. Só é permitido editar:
+O escopo é deny-by-default. Só é permitido editar os caminhos explicitamente autorizados por `permission.edit` neste agente:
 
+- `README.md`
+- `CHANGELOG.md`
 - `docs/**` — documentação, arquitetura e artefatos versionados das Sprints
 - `src/**` — código-fonte do framework
 - `test/**` — testes
 - `tests/**` — testes
 - `package.json` — dependências e scripts necessários à Sprint
 - `package-lock.json` — lockfile correspondente às dependências autorizadas
+- `.nvmrc`
+- `.github/workflows/ci.yml`
+- `.github/workflows/codeql.yml`
 
-Qualquer outro caminho está negado. Se a Sprint exigir editar um caminho fora desta lista, parar com `BLOCKED_NEEDS_HUMAN`: a ampliação do escopo exige edição humana de `.opencode/agents/sprint-implementer.md`.
+As autorizações acima não eliminam restrições adicionais deste contrato.
+
+Em particular:
+
+- caminhos sob `.github/**` somente podem ser editados quando o path individual estiver simultaneamente permitido por `permission.edit` e explicitamente autorizado por decisão humana registrada no `loop-state.md`;
+- `AGENTS.md`, `opencode.json`, `.opencode/**`, `.env`, `.env.*` e arquivos de segredo permanecem proibidos;
+- nenhum wildcard adicional é implicitamente autorizado;
+- se o trabalho exigir qualquer caminho não autorizado por `permission.edit`, parar com `BLOCKED_NEEDS_HUMAN`.
+
+O `permission.edit` é a fronteira executável de paths deste agente. As restrições textuais deste contrato podem reduzir uma autorização em situações específicas, como a exigência de decisão humana para `.github/**`, mas nunca devem declarar como inexistente um path explicitamente presente em `permission.edit`.

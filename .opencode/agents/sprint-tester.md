@@ -1,7 +1,7 @@
 ---
 description: Executa testes focados e quality gates. Apresenta comandos, exit codes e falhas. Nunca corrige testes.
 mode: subagent
-model: opencode-go/deepseek-v4.1-flash
+model: openai/gpt-6-luna
 steps: 30
 temperature: 0.1
 permission:
