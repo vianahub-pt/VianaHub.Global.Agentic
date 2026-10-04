@@ -1,0 +1,31 @@
+{
+  "name": "vianahub-global-agentic",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Framework de engenharia agentic vendor-neutral da VianaHub (Sprint 0 - fundacao).",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "whitespace": "git diff --check",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:coverage": "node scripts/coverage-gate.mjs",
+    "build": "tsc -p tsconfig.json",
+    "audit": "npm audit --audit-level=high"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.3",
+    "c8": "12.0.0",
+    "eslint": "10.11.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
+  }
+}
