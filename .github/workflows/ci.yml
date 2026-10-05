@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validar origem do PR para main
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            develop|hotfix/?*) ;;
+            *)
+              echo '::error::PRs para main devem partir de develop ou hotfix/*.'
+              exit 1
+              ;;
+          esac
+
+      - name: Obter código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: 'Gate 1 - Whitespace'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          zero_sha=0000000000000000000000000000000000000000
+
+          require_commit() {
+            if [[ ! "$1" =~ ^[0-9a-fA-F]{40}$ ]] ||
+              ! git cat-file -e "$1^{commit}"; then
+              echo '::error::SHA obrigatório ausente, inválido ou indisponível no checkout.'
+              exit 1
+            fi
+          }
+
+          case "$EVENT_NAME" in
+            pull_request)
+              base="$PR_BASE_SHA"
+              head="$PR_HEAD_SHA"
+              require_commit "$base"
+              ;;
+            push)
+              base="$PUSH_BEFORE_SHA"
+              head="$PUSH_HEAD_SHA"
+              if [[ "$base" == "$zero_sha" ]]; then
+                base=$(git mktree < /dev/null)
+              else
+                require_commit "$base"
+              fi
+              ;;
+            *)
+              echo '::error::Evento ausente ou não suportado pelo gate whitespace.'
+              exit 1
+              ;;
+          esac
+
+          require_commit "$head"
+          git diff --check "$base" "$head" --
+
+      - name: 'Gate 2 - Formatação'
+        run: npm run format:check
+
+      - name: 'Gate 3 - Lint'
+        run: npm run lint
+
+      - name: 'Gate 4 - Tipagem'
+        run: npm run typecheck
+
+      - name: 'Gate 5 - Testes'
+        run: npm test
+
+      - name: 'Gate 6 - Cobertura'
+        run: npm run test:coverage
+
+      - name: 'Gate 7 - Build'
+        run: npm run build
+
+      - name: 'Gate 8 - Auditoria'
+        run: npm run audit

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.opencode/
+docs/
+package-lock.json
+*.md
+opencode.json
+AGENTS.md
