@@ -78,6 +78,39 @@
 - **Reavaliação final `sprint-reviewer`:** APROVADO — o finding MEDIUM documental foi resolvido pela evidência acima; 0 BLOCKER, 0 HIGH, 0 MEDIUM.
 - **Resultado terminal da única PR_REVIEW_FOLLOW_UP_REMEDIATION:** `READY_FOR_HUMAN_REVIEW`. O Gate 1 verifica o diff real do evento sem reduzir os gates, PRF-04 possui evidência contemporânea, os oito gates locais passaram e Security/Reviewer finais não têm findings BLOCKER/HIGH/MEDIUM. Não houve novo ciclo, `FINAL_REMEDIATION`, alteração no Core, commit, push ou merge.
 
+### PR_REVIEW_REMOTE_CI_REMEDIATION — preflight bloqueado (2026-10-04)
+
+- **Decisão humana recebida:** uma remediação única restrita a `test/monitor-sinks.test.ts` e a este journal para tornar o fixture MON-05 hermético, preservando o fail-closed do Core.
+- **Preflight executado:** `git status --short --branch --untracked-files=all` reportou working tree limpo na branch `feature/sprint-0-bootstrap-agentic-framework`; `git rev-parse HEAD` retornou `1bdde74a223751216113f02e1cc15752b274c8b8`; `git diff --stat` não retornou alterações.
+- **Bloqueio:** o HEAD atual diverge do Follow-up HEAD autorizado e registrado (`1c1135010c9b1229d262517b0a1386bffb363e06`). A nova decisão confirma que houve push, mas não registra nem autoriza explicitamente o novo SHA para este boundary pós-push. Não é permitido inferir essa reconciliação a partir do working tree limpo ou da ocorrência remota.
+- **Resultado terminal:** `BLOCKED_NEEDS_HUMAN`. Nenhuma delegação, edição de teste, execução de teste/gate ou alteração funcional foi realizada nesta tentativa.
+
+### Decisão humana — reconciliação do HEAD pós-push (2026-10-04)
+
+- **Branch autorizada:** `feature/sprint-0-bootstrap-agentic-framework`.
+- **Follow-up HEAD anterior:** `1c1135010c9b1229d262517b0a1386bffb363e06`.
+- **Novo HEAD autorizado:** `1bdde74a223751216113f02e1cc15752b274c8b8`, commit humano previamente aprovado `ci: add quality gates and harden PR follow-up`, enviado à mesma feature branch e origem da validação remota da PR #1.
+- **SHA-base histórico:** `10f90995c9052786e1c63ae5fb44e7c347c3eb01`, imutável.
+- A decisão não constitui retomada `LOOP-06`, ciclo, `FINAL_REMEDIATION` ou reinício; preserva a autorização `PR_REVIEW_REMOTE_CI_REMEDIATION` e seu boundary exclusivo: `test/monitor-sinks.test.ts` para implementação e este journal para evidência.
+- **Preflight reconciliado:** branch e HEAD atuais correspondem à autorização; working tree contém somente a alteração válida deste `loop-state.md`; `git diff --stat` contém somente este journal. Próximo passo permitido: plano limitado de fixture MON-05 por `sprint-architect`.
+
+### Plano verificado — PR_REVIEW_REMOTE_CI_REMEDIATION
+
+- Alterar exclusivamente `test/monitor-sinks.test.ts`: criar a raiz com `mkdtempSync` antes de construir `FileMonitorSink`, usar caminho contido nessa raiz e removê-la em `finally` com `rmSync`.
+- Preservar emissão, assertions e semântica fail-closed; não introduzir fallback, skip ou captura que mascare erro.
+- Validar o arquivo de monitor focadamente, executar os oito gates declarados e obter revisões independentes sobre hermeticidade, escopo e preservação de guardrails.
+- **Próximo passo permitido:** implementação limitada de MON-05 por `sprint-implementer` em `test/monitor-sinks.test.ts`.
+
+### Execução e resultado — PR_REVIEW_REMOTE_CI_REMEDIATION (2026-10-04)
+
+- **Implementação:** `test/monitor-sinks.test.ts` é o único arquivo de implementação alterado. MON-05 agora cria a raiz exclusiva com `fs.mkdtempSync` antes de instanciar `FileMonitorSink`, usa essa raiz como limite e a remove em `finally` com `fs.rmSync(..., { recursive: true, force: true })`. Emissão e assertions preexistentes foram preservadas; nenhum `src/**`, workflow, guardrail ou configuração foi alterado.
+- **Teste focado:** a tentativa de `node --test "test/monitor-sinks.test.ts"` foi bloqueada pela política da sessão. O comando alternativo permitido `npm run test -- test/monitor-sinks.test.ts` retornou exit 0, mas o script executou a suíte completa; MON-05 foi incluído e passou. Não houve skip, bypass ou mascaramento.
+- **Quality gates:** `git diff --check` (exit 0, PASS); `npm run format:check` (exit 0, PASS); `npm run lint` (exit 0, PASS); `npm run typecheck` (exit 0, PASS); `npm test` (exit 0, PASS, 351/351); `npm run test:coverage` (exit 0, PASS, statements 97,07%); `npm run build` (exit 0, PASS); `npm run audit` (exit 0, PASS, 0 vulnerabilidades).
+- **Escopo e hermeticidade:** tester e security confirmaram `mkdtempSync` antes do sink, caminho contido, cleanup em `finally`, manutenção dos testes de traversal/symlink e diff restrito a `test/monitor-sinks.test.ts` com este journal autorizado.
+- **Security:** APROVADO — 0 BLOCKER, 0 HIGH, 0 MEDIUM, 0 LOW.
+- **Reviewer:** APROVADO — 0 BLOCKER, 0 HIGH, 0 MEDIUM; registrou 1 LOW preexistente (`assert.ok(true)`) sem relação causal com a remediação e sem autorização para ampliá-la. A suíte completa contendo MON-05 foi considerada evidência suficiente ante o bloqueio de política do teste isolado.
+- **Resultado terminal:** `READY_FOR_HUMAN_REVIEW`. MON-05 e 351/351 testes passaram, todos os oito gates passaram, não há finding BLOCKER/HIGH/MEDIUM, o incremento permaneceu no boundary autorizado e não houve commit, push ou merge nesta execução.
+
 ## 31. Bloqueio de retomada — SHA-base incompatível (2026-10-04)
 
 - **Status terminal:** `BLOCKED_NEEDS_HUMAN`.

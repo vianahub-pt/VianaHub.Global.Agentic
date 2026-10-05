@@ -26,10 +26,14 @@ test('MON-05: sink memória', () => {
 });
 
 test('MON-05: sink arquivo', () => {
-  const dir = join(tmpdir(), 'monitor-test');
-  const sink = new FileMonitorSink(join(dir, 'events.jsonl'), dir);
-  sink.emit(createMonitorEvent('sprint_started', corr));
-  assert.ok(true);
+  const dir = fs.mkdtempSync(join(tmpdir(), 'monitor-test-'));
+  try {
+    const sink = new FileMonitorSink(join(dir, 'events.jsonl'), dir);
+    sink.emit(createMonitorEvent('sprint_started', corr));
+    assert.ok(true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('MON-06: path traversal negado', () => {
