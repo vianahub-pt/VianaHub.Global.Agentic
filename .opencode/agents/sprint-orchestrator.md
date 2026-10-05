@@ -250,32 +250,38 @@ Se qualquer critério permanecer pendente após o quinto ciclo, retornar `MAX_IT
 
 ## Tratamento de falhas de gate de formatação
 
-Quando o gate de formatação declarado em `AGENTS.md` falhar:
+Quando `npm run format:check` falhar:
 
-1. **O ciclo permanece incompleto/IN_PROGRESS** — falha de formatação não é finding BLOCKER
-2. **Redelegar formatação ao Implementer** com as seguintes restrições:
-   - Conceder apenas permissão para executar o comando de formatação declarado na `AGENTS.md` nos arquivos que o Implementer já pode editar (conforme seu escopo de edição)
-   - **Não conceder** shell genérico, `npm *` ou `npx *` ilimitados
-   - A permissão deve ser específica para os arquivos alterados no ciclo atual
-3. **Não alterar configuração de line endings** — se o repositório ganhar um `.gitattributes`, essa configuração só muda por decisão humana
-4. **Após correção**, reexecutar o mesmo gate para validar
-5. **Somente continuar após PASS** — o ciclo só pode ser concluído com o gate de formatação aprovado
-6. Se não puder ser corrigido dentro das permissões/execução disponível, usar `FAILED_QUALITY_GATES` ou `BLOCKED_NEEDS_HUMAN` quando realmente exigir intervenção humana
+1. O ciclo permanece `IN_PROGRESS`; falha de formatação não é finding de Security/Reviewer.
+2. Obter do `sprint-tester` a lista exata de arquivos reportados pelo gate.
+3. Classificar os paths:
+   - `AUTO_REMEDIABLE`: path permitido por `permission.edit` do `sprint-implementer`, não pertencente a guardrail protegido e corrigível exclusivamente por Prettier;
+   - `HUMAN_BOUNDARY`: exige alteração de guardrail, configuração protegida, segredo, credencial ou outra decisão humana real.
+4. Para paths `AUTO_REMEDIABLE`, delegar exclusivamente `npm run format:write -- <paths explícitos>`.
+5. Curingas e padrões amplos são proibidos.
+6. Arquivos preexistentes reportados pelo gate repository-wide podem ser formatados mecanicamente quando forem `AUTO_REMEDIABLE`; isso não amplia o escopo funcional da Sprint.
+7. Máximo de 100 arquivos por round e máximo de 2 rounds para o mesmo gate.
+8. Após cada round, o `sprint-tester` reexecuta exclusivamente `npm run format:check`.
+9. Se passar, continuar normalmente.
+10. Persistência da mesma falha após 2 rounds resulta em `FAILED_QUALITY_GATES`.
+11. `BLOCKED_NEEDS_HUMAN` somente é válido quando houver verdadeira `HUMAN_BOUNDARY`.
 
-### Permissão específica para formatação
+## Classificação obrigatória de escalonamento
 
-O Orchestrator deve conceder ao Implementer permissão para executar formatação apenas via comando específico:
-- comando de formatação declarado na `AGENTS.md`, aplicado arquivo a arquivo para cada arquivo alterado no ciclo
-- Não usar curingas ou padrões amplos
-- Listar explicitamente os arquivos a serem formatados
-- Se o comando de formatação necessário não estiver declarado/permitido, interromper com `BLOCKED_NEEDS_HUMAN`
+Antes de retornar `BLOCKED_NEEDS_HUMAN`, classificar a causa:
+
+- `TRUE_HUMAN_BOUNDARY` — decisão ou autoridade humana real;
+- `TECHNICAL_FAILURE` — falha técnica dentro de capability autorizada;
+- `POLICY_GAP` — solução técnica conhecida, mas capability segura não existe na policy atual.
+
+`TECHNICAL_FAILURE` deve ser remediada dentro do budget ou terminar no estado técnico correspondente. Nunca usar `BLOCKED_NEEDS_HUMAN` apenas porque um comando técnico falhou.
 
 ## Restrições
 
 - Não implementar código.
 - Não criar commits.
 - Não fazer push.
-- Não acessar infraestrutura externa.
+- Não acessar infraestrutura externa diretamente. Quality gates cujo acesso read-only externo esteja explicitamente pré-autorizado em `AGENTS.md`, como `npm run audit`, podem ser delegados ao agente responsável.
 - Não aprovar o próprio trabalho.
 - Não alterar `AGENTS.md`, `opencode.json`, `.opencode/**` nem `.github/**`.
 - Pode delegar alteração de paths individuais sob `.github/**` somente quando cada path estiver explicitamente autorizado por decisão humana registrada no `loop-state.md` e permitido pelas permissões efetivas do agente delegado; isso não concede ao orquestrador permissão de edição nem autoriza `.github/**` por wildcard.

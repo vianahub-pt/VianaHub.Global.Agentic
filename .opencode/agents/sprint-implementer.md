@@ -38,13 +38,18 @@ permission:
     "npm run test *": allow
     "npm run test:coverage": allow
     "npm run build": allow
-    "npm audit --audit-level=high": allow
 
-    "npx prettier --write docs/**": allow
-    "npx prettier --write src/**": allow
-    "npx prettier --write test/**": allow
-    "npx prettier --write tests/**": allow
-    "npx prettier --write package.json": allow
+    "npm run format:write -- README.md": allow
+    "npm run format:write -- CHANGELOG.md": allow
+    "npm run format:write -- docs/**": allow
+    "npm run format:write -- src/**": allow
+    "npm run format:write -- test/**": allow
+    "npm run format:write -- tests/**": allow
+    "npm run format:write -- package.json": allow
+    "npm run format:write -- package-lock.json": allow
+    "npm run format:write -- .github/workflows/ci.yml": allow
+    "npm run format:write -- .github/workflows/codeql.yml": allow
+    "npm run format:write -- .nvmrc": allow
   task: deny
   glob: allow
   list: allow
@@ -92,13 +97,16 @@ Você é o implementador da Sprint. É o único agente autorizado a editar códi
 
 ## Formatação
 
-Quando solicitado pelo Orchestrator para corrigir formatação:
-- Executar o comando de formatação declarado em `AGENTS.md` nos arquivos específicos que estão dentro do seu escopo de edição
-- Não usar curingas ou padrões amplos
-- Listar explicitamente os arquivos a serem formatados
-- Não alterar configuração de line endings nem editar `.gitattributes`
-- Após formatação, reportar ao Orchestrator para reexecução do gate de formatação
-- Se o comando de formatação necessário não estiver declarado/permitido, parar com `BLOCKED_NEEDS_HUMAN`
+Quando o Orchestrator solicitar remediação de formatação:
+
+- Usar exclusivamente `npm run format:write -- <arquivo...>`, conforme declarado em `AGENTS.md`.
+- Informar paths explícitos; curingas e padrões amplos são proibidos.
+- Formatar somente arquivos reportados pelo gate atual e permitidos por `permission.edit`.
+- Uma remediação mecânica de formatação pode corrigir arquivos preexistentes reportados pelo gate repository-wide sem ser considerada ampliação funcional da Sprint.
+- Não editar manualmente conteúdo para simular formatação.
+- Não alterar `.gitattributes`, `.prettierrc.json` ou `.prettierignore`.
+- Após a execução, reportar os arquivos efetivamente alterados para que o Tester reexecute o mesmo gate.
+- Se algum path reportado estiver fora de `permission.edit` ou exigir mudança de policy/configuração, reportar o path e a restrição ao Orchestrator; somente uma verdadeira fronteira humana pode resultar em `BLOCKED_NEEDS_HUMAN`.
 
 ## Restrições
 

@@ -36,13 +36,16 @@ Esta seção é a **única fonte de verdade** dos quality gates. O `sprint-teste
 ### Escopo de cada gate
 
 - `git diff --check` — whitespace/merge markers em alterações rastreadas (gate original da semente).
-- `npm run format:check` — Prettier em modo check sobre código e configuração (`*.ts`, `*.mjs`, `*.js`, `*.json`). O escopo é definido em `.prettierignore`, que exclui `docs/`, `*.md`, `package-lock.json` e os guardrails `opencode.json`, `AGENTS.md` e `.opencode/**`: nenhuma ferramenta pode reescrever guardrails. Markdown fica sob `git diff --check`.
+- `npm run format:check` — Prettier em modo check sobre o escopo definido por `.prettierignore`. Os guardrails `opencode.json`, `AGENTS.md` e `.opencode/**` permanecem excluídos de reescrita automática.
+- **Remediação canónica de formatação:** `npm run format:write -- <arquivo...>`. Este comando não é quality gate; é uma capability de remediação técnica pré-autorizada. Deve receber somente paths explícitos reportados pelo gate atual, sem curingas, e somente paths permitidos por `permission.edit` do `sprint-implementer`.
+- Uma remediação exclusivamente mecânica por `format:write` não amplia o escopo funcional da Sprint. O diff resultante continua sujeito aos oito gates e às revisões independentes.
+- `.gitattributes` é a fonte autoritativa de normalização de line endings do repositório. Arquivos de texto são normalizados para LF independentemente do `core.autocrlf` local.
 - `npm run lint` — ESLint (flat config em `eslint.config.mjs`) sobre `**/*.ts` e `**/*.mjs`.
 - `npm run typecheck` — `tsc --noEmit -p tsconfig.json` com `strict` e `erasableSyntaxOnly`.
 - `npm test` — runner nativo `node:test` sobre `test/**/*.test.ts`.
 - `npm run test:coverage` — `node scripts/coverage-gate.mjs` (wrapper sobre `c8`): universo = **todos** os módulos `src/**/*.ts` (exclui `*.d.ts`), com `--all` para que um módulo nunca importado também entre no relatório. Métrica autoritativa da Sprint: **statements ≥ 80%** (critério `TST-04`), thresholds `--statements/--branches/--functions/--lines = 80` com `--check-coverage`. Universo vazio (sem `src/`) imprime `COVERAGE_UNIVERSE_EMPTY` e **não constitui evidência de cobertura**: `TST-04` só é verificável quando `src/` existir. Módulo de `src/` ausente do relatório, resumo não gerado ou threshold reprovado = **FAIL** (fail-closed).
 - `npm run build` — `tsc -p tsconfig.json`, emissão em `dist/` (gitignored).
-- `npm run audit` — `npm audit --audit-level=high` sobre as dependências. Requer acesso ao registro npm; registro indisponível = **FAIL**, nunca skip.
+- `npm run audit` — `npm audit --audit-level=high` sobre as dependências. O acesso read-only necessário ao registro npm para este gate declarado é pré-autorizado e não exige nova decisão humana. Registro indisponível continua sendo **FAIL**, nunca skip.
 
 ### Regras fail-closed
 
@@ -66,7 +69,7 @@ Esta seção é a **única fonte de verdade** dos quality gates. O `sprint-teste
 
 - **Stack aprovada para a Sprint 0 (decisão humana):** Node.js `>=24` e TypeScript (`strict`, `erasableSyntaxOnly`, ESM/`nodenext`). Node executa os testes `.ts` por type stripping nativo.
 - **Layout:** `src/` (código do framework, ainda inexistente), `test/` (testes), `docs/` (specs e estado de sprint); `dist/`, `coverage/`, `node_modules/` gerados e gitignored.
-- **Formato:** Prettier (`.prettierrc.json`): LF, aspas simples, vírgula final, 100 colunas.
+- **Formato:** Prettier (`.prettierrc.json`): LF, aspas simples, vírgula final, 100 colunas. `.gitattributes` fixa LF no checkout para eliminar divergência Windows/Linux.
 - **Pacotes:** somente npm (`package.json` + `package-lock.json`); dependências apenas com necessidade concreta da Sprint.
 - Estrutura detalhada de diretórios e a arquitetura vendor-neutral continuam sendo alvo da Sprint 0.
 
@@ -74,7 +77,7 @@ Esta seção é a **única fonte de verdade** dos quality gates. O `sprint-teste
 
 - Nenhum segredo no repositório; arquivos `.env` e chaves privadas negados por padrão em `opencode.json`.
 - Validação de entrada e proteção contra path traversal são requisitos de projeto, não detalhes já implementados.
-- Nenhum acesso a infraestrutura externa durante o loop de Sprint sem autorização humana.
+- Nenhum acesso a infraestrutura externa durante o loop de Sprint sem autorização humana, **exceto** o acesso read-only estritamente necessário para executar um quality gate explicitamente declarado nesta seção, como `npm run audit`. Essa exceção não autoriza instalação, atualização, publicação, autenticação, deployment ou qualquer outra operação externa.
 - SHA-pinned GitHub Actions e análise estática só entram quando o repositório ganhar CI (decisão humana).
 
 ## Agent Loop Rules
@@ -85,6 +88,9 @@ Esta seção é a **única fonte de verdade** dos quality gates. O `sprint-teste
 - **Status do repositório:** semente de bootstrap; sem uso em produção.
 - **Escopo de Sprint:** definido exclusivamente por `docs/sprints/<sprint-id>/spec.md`.
 - **Guardrails agentic:** `AGENTS.md`, `opencode.json` e `.opencode/**` mudam somente por edição humana.
+- **Remediação técnica automática:** falhas determinísticas corrigíveis por capabilities previamente declaradas devem ser resolvidas pelos agentes, revalidadas e registradas sem intervenção humana.
+- **Fronteira humana real:** `BLOCKED_NEEDS_HUMAN` é reservado para decisão de negócio/requisito, credencial ou segredo, operação destrutiva, produção/infraestrutura não pré-autorizada, mudança de policy/guardrail ou outra autorização que somente o humano possa conceder.
+- **Falha técnica não é fronteira humana:** quando uma remediação técnica permitida falhar ou esgotar o budget, usar o estado técnico apropriado (`FAILED_QUALITY_GATES`, `MAX_ITERATIONS_REACHED` etc.), nunca converter automaticamente a falha em `BLOCKED_NEEDS_HUMAN`.
 
 ## Protocol tokens
 

@@ -59,13 +59,25 @@ A partir do `$ARGUMENTS` válido, resolver os caminhos:
 - **Especificação:** `docs/sprints/<sprint-id>/spec.md`
 - **Estado do loop:** `docs/sprints/<sprint-id>/loop-state.md`
 
-Se `spec.md` ou `loop-state.md` não existirem no diretório resolvido, retornar `BLOCKED_NEEDS_HUMAN` com mensagem indicando o arquivo ausente e parar.
+Se `spec.md` não existir, retornar `BLOCKED_NEEDS_HUMAN`: a especificação da Sprint é uma entrada humana obrigatória.
 
-## Precondição fail-closed — identidade do orquestrador
+Se `spec.md` existir e `loop-state.md` não existir, tratar como `NEW_SPRINT`:
 
-Antes de ler qualquer especificação, editar arquivos, executar testes ou delegar, o orquestrador **deve** confirmar que a identidade primária ativa é `sprint-orchestrator`.
+1. executar o preflight autorizado;
+2. confirmar que não existe evidência de execução anterior da mesma Sprint no working tree;
+3. exigir branch de trabalho compatível com a Sprint e working tree sem alterações inesperadas;
+4. criar `loop-state.md` com branch, HEAD inicial, `sprintBaseSha`, status `IN_PROGRESS`, iteração `0` e próximo passo para o `sprint-architect`;
+5. continuar normalmente sem exigir criação manual do checkpoint.
 
-Se a identidade ativa não for `sprint-orchestrator` ou não puder ser confirmada, o orquestrador **deve** retornar **apenas** `INVALID_ORCHESTRATOR_CONTEXT` e parar imediatamente.
+Se houver evidência ambígua de execução anterior sem `loop-state.md`, classificar como `POLICY_GAP` e parar fail-closed.
+
+## Contexto de execução do Orchestrator
+
+Este comando é executado pelo agente primário `sprint-orchestrator` definido na configuração do OpenCode. A seleção do agente é responsabilidade do runtime.
+
+Não tentar confirmar identidade por introspecção, leitura de arquivos, ambiente ou interface.
+
+A evidência operacional autoritativa da sessão é o `AGENT_ROUTING_PASS` produzido por `/sprint-loop-check` imediatamente antes deste comando.
 
 ## Pré-condição fail-closed — roteamento de agentes
 
@@ -270,24 +282,36 @@ Se qualquer critério permanecer pendente após o quinto ciclo, retornar `MAX_IT
 
 ### Tratamento de falhas de gate de formatação
 
-Quando o gate de formatação declarado em `AGENTS.md` falhar:
+Quando `npm run format:check` falhar:
 
-1. **O ciclo permanece incompleto/IN_PROGRESS** — falha de formatação não é finding BLOCKER
-2. **Redelegar formatação ao Implementer** com as seguintes restrições:
-   - Conceder apenas permissão para executar o comando de formatação declarado na `AGENTS.md` nos arquivos que o Implementer já pode editar (conforme seu escopo de edição)
-   - **Não conceder** shell genérico, `npm *` ou `npx *` ilimitados
-   - A permissão deve ser específica para os arquivos alterados no ciclo atual
-3. **Não alterar configuração de line endings** — se o repositório ganhar um `.gitattributes`, essa configuração só muda por decisão humana
-4. **Após correção**, reexecutar o mesmo gate para validar
-5. **Somente continuar após PASS** — o ciclo só pode ser concluído com o gate de formatação aprovado
-6. Se não puder ser corrigido dentro das permissões/execução disponível, usar `FAILED_QUALITY_GATES` ou `BLOCKED_NEEDS_HUMAN` quando realmente exigir intervenção humana
+1. Manter o ciclo `IN_PROGRESS`.
+2. Obter a lista exata de paths reportados pelo `sprint-tester`.
+3. Classificar cada path como `AUTO_REMEDIABLE` ou `HUMAN_BOUNDARY`.
+4. Para `AUTO_REMEDIABLE`, delegar exclusivamente `npm run format:write -- <paths explícitos>`.
+5. Proibir curingas e shell genérico.
+6. Permitir arquivos preexistentes reportados pelo gate repository-wide quando a alteração for exclusivamente mecânica.
+7. Máximo de 100 arquivos por round e 2 rounds para o mesmo gate.
+8. Reexecutar exclusivamente `npm run format:check`.
+9. PASS permite continuar.
+10. Persistência após 2 rounds resulta em `FAILED_QUALITY_GATES`.
+11. `BLOCKED_NEEDS_HUMAN` somente quando houver verdadeira `HUMAN_BOUNDARY`.
+
+### Classificação obrigatória antes de bloqueio humano
+
+Antes de retornar `BLOCKED_NEEDS_HUMAN`, classificar a causa como:
+
+- `TRUE_HUMAN_BOUNDARY`
+- `TECHNICAL_FAILURE`
+- `POLICY_GAP`
+
+Uma falha técnica dentro de capability autorizada nunca é, por si só, motivo para intervenção humana.
 
 ## Restrições
 
 - Nunca usar auto-merge
 - Nunca criar commit
 - Nunca fazer push
-- Nunca acessar infraestrutura externa
+- Nunca acessar infraestrutura externa diretamente; quality gates com acesso read-only externo explicitamente pré-autorizado em `AGENTS.md` podem ser delegados ao agente responsável
 - Nunca alterar `AGENTS.md`, `opencode.json` ou `.opencode/**`
 - `.github/**` permanece negado por padrão; somente paths individuais explicitamente autorizados por decisão humana registrada no `loop-state.md` podem ser delegados, e apenas quando também permitidos pelas permissões efetivas do agente delegado; nunca interpretar essa exceção como autorização wildcard para `.github/**`
 - Interromper em condições de parada humana
